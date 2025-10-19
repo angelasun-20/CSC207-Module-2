@@ -3,6 +3,7 @@ package dogapi;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -25,7 +26,7 @@ public class DogApiBreedFetcher implements BreedFetcher {
      * @throws BreedNotFoundException if the breed does not exist (or if the API call fails for any reason)
      */
     @Override
-    public List<String> getSubBreeds(String breed) throws BreedFetcher.BreedNotFoundException{
+    public List<String> getSubBreeds(String breed) throws BreedNotFoundException{
         String url = "https://dog.ceo/api/breed/" + breed.toLowerCase() + "/list";
 
         Request request = new Request.Builder()
@@ -38,23 +39,29 @@ public class DogApiBreedFetcher implements BreedFetcher {
             }
 
             String responseBody = response.body().string();
-            JSONObject subBreedsObject = new JSONObject(responseBody);
-
-            String status = subBreedsObject.getString("status");
-            if (!status.equals("success")) {
-                throw new BreedFetcher.BreedNotFoundException(breed);
-            }
-
-            JSONArray subBreedsArray = subBreedsObject.getJSONArray("message");
-            List<String> subBreeds = new ArrayList<>();
-            for (int i = 0; i < subBreedsArray.length(); i++) {
-                subBreeds.add(subBreedsArray.getString(i));
-            }
+            List<String> subBreeds = getStrings(breed, responseBody);
 
             return subBreeds;
 
         } catch (IOException e) {
             throw new BreedFetcher.BreedNotFoundException(breed);
         }
+    }
+
+    @NotNull
+    private static List<String> getStrings(String breed, String responseBody) {
+        JSONObject subBreedsObject = new JSONObject(responseBody);
+
+        String status = subBreedsObject.getString("status");
+        if (!status.equals("success")) {
+            throw new BreedNotFoundException(breed);
+        }
+
+        JSONArray subBreedsArray = subBreedsObject.getJSONArray("message");
+        List<String> subBreeds = new ArrayList<>();
+        for (int i = 0; i < subBreedsArray.length(); i++) {
+            subBreeds.add(subBreedsArray.getString(i));
+        }
+        return subBreeds;
     }
 }
